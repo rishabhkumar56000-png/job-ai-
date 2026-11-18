@@ -1,0 +1,414 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Private user account profile and career target preferences.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "maxLength": 254
+        },
+        "displayName": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "targetRole": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["uid", "email", "displayName", "targetRole", "createdAt", "updatedAt"]
+    },
+    "ResumeAnalysis": {
+      "title": "ResumeAnalysis",
+      "description": "Private analyzed resume record including extracted sections, AI summary, and categorized skills.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "userId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "fileName": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "fileType": {
+          "type": "string",
+          "enum": ["pdf", "docx", "demo", "text"]
+        },
+        "extractedText": {
+          "type": "string",
+          "maxLength": 35000
+        },
+        "summary": {
+          "type": "string",
+          "maxLength": 3000
+        },
+        "education": {
+          "type": "array"
+        },
+        "experience": {
+          "type": "array"
+        },
+        "projects": {
+          "type": "array"
+        },
+        "strengths": {
+          "type": "array"
+        },
+        "improvements": {
+          "type": "array"
+        },
+        "suggestions": {
+          "type": "array"
+        },
+        "programmingSkills": {
+          "type": "array"
+        },
+        "technicalSkills": {
+          "type": "array"
+        },
+        "softSkills": {
+          "type": "array"
+        },
+        "isDemo": {
+          "type": "boolean"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "fileName",
+        "fileType",
+        "extractedText",
+        "summary",
+        "education",
+        "experience",
+        "projects",
+        "strengths",
+        "improvements",
+        "suggestions",
+        "programmingSkills",
+        "technicalSkills",
+        "softSkills",
+        "isDemo",
+        "createdAt"
+      ]
+    },
+    "JobMatch": {
+      "title": "JobMatch",
+      "description": "Saved job description comparison and explainable compatibility score.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "userId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "resumeId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "jobTitle": {
+          "type": "string",
+          "maxLength": 160
+        },
+        "companyName": {
+          "type": "string",
+          "maxLength": 160
+        },
+        "jobDescription": {
+          "type": "string",
+          "maxLength": 20000
+        },
+        "compatibilityScore": {
+          "type": "number"
+        },
+        "matchedSkills": {
+          "type": "array"
+        },
+        "missingSkills": {
+          "type": "array"
+        },
+        "scoreExplanation": {
+          "type": "string",
+          "maxLength": 3000
+        },
+        "scoreBreakdown": {
+          "type": "array"
+        },
+        "isDemo": {
+          "type": "boolean"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "resumeId",
+        "jobTitle",
+        "companyName",
+        "jobDescription",
+        "compatibilityScore",
+        "matchedSkills",
+        "missingSkills",
+        "scoreExplanation",
+        "scoreBreakdown",
+        "isDemo",
+        "createdAt"
+      ]
+    },
+    "SkillGapItem": {
+      "title": "SkillGapItem",
+      "description": "Tracked skill gap checklist item with learning topics and completion status.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "userId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "skillName": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "category": {
+          "type": "string",
+          "enum": ["programming", "technical", "soft"]
+        },
+        "priority": {
+          "type": "string",
+          "enum": ["High", "Medium", "Foundation"]
+        },
+        "learningTopics": {
+          "type": "array"
+        },
+        "completed": {
+          "type": "boolean"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "skillName",
+        "category",
+        "priority",
+        "learningTopics",
+        "completed",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "CareerRoadmap": {
+      "title": "CareerRoadmap",
+      "description": "Personalized career development roadmap for a target role with step completion tracking.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "userId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "targetRole": {
+          "type": "string",
+          "enum": [
+            "AI/ML Engineer",
+            "Data Analyst",
+            "Software Developer",
+            "Web Developer",
+            "Cybersecurity Analyst",
+            "Data Scientist"
+          ]
+        },
+        "overview": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "steps": {
+          "type": "array"
+        },
+        "recommendedSkills": {
+          "type": "array"
+        },
+        "projectSuggestions": {
+          "type": "array"
+        },
+        "completedStepIds": {
+          "type": "array"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "targetRole",
+        "overview",
+        "steps",
+        "recommendedSkills",
+        "projectSuggestions",
+        "completedStepIds",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "InterviewSession": {
+      "title": "InterviewSession",
+      "description": "AI interview preparation question, sample answer, user practice answer, and AI feedback.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "userId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "targetRole": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "category": {
+          "type": "string",
+          "enum": ["technical", "hr"]
+        },
+        "question": {
+          "type": "string",
+          "maxLength": 1500
+        },
+        "sampleAnswer": {
+          "type": "string",
+          "maxLength": 4000
+        },
+        "userAnswer": {
+          "type": "string",
+          "maxLength": 6000
+        },
+        "aiFeedback": {
+          "type": "string",
+          "maxLength": 4000
+        },
+        "strengths": {
+          "type": "array"
+        },
+        "improvements": {
+          "type": "array"
+        },
+        "score": {
+          "type": "number"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "targetRole",
+        "category",
+        "question",
+        "sampleAnswer",
+        "userAnswer",
+        "aiFeedback",
+        "strengths",
+        "improvements",
+        "score",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Private user profile and target role configuration."
+    },
+    "/users/{userId}/resumes/{resumeId}": {
+      "schema": { "$ref": "#/entities/ResumeAnalysis" },
+      "description": "User-owned private resume analysis records."
+    },
+    "/users/{userId}/jobMatches/{matchId}": {
+      "schema": { "$ref": "#/entities/JobMatch" },
+      "description": "User-owned saved job descriptions and compatibility analyses."
+    },
+    "/users/{userId}/skillProgress/{skillId}": {
+      "schema": { "$ref": "#/entities/SkillGapItem" },
+      "description": "User-owned skill improvement checklist items."
+    },
+    "/users/{userId}/roadmaps/{roadmapId}": {
+      "schema": { "$ref": "#/entities/CareerRoadmap" },
+      "description": "User-owned personalized career roadmaps and completion progress."
+    },
+    "/users/{userId}/interviews/{interviewId}": {
+      "schema": { "$ref": "#/entities/InterviewSession" },
+      "description": "User-owned interview preparation questions and evaluated answers."
+    }
+  }
+}

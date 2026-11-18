@@ -1,0 +1,313 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Core primitives
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function parentUserExists(userId) {
+      return exists(/databases/$(database)/documents/users/$(userId));
+    }
+
+    function isBoundedString(val, minLen, maxLen) {
+      return val is string && val.size() >= minLen && val.size() <= maxLen;
+    }
+
+    function isBoundedStringList(arr, maxItems) {
+      return arr is list && arr.size() <= maxItems && (arr.size() == 0 || arr[0] is string);
+    }
+
+    function isBoundedMapList(arr, maxItems) {
+      return arr is list && arr.size() <= maxItems && (arr.size() == 0 || arr[0] is map);
+    }
+
+    // Entity validators
+    function isValidUserProfile(data, userId) {
+      return data.keys().hasAll(['uid', 'email', 'displayName', 'targetRole', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['uid', 'email', 'displayName', 'targetRole', 'createdAt', 'updatedAt'])
+        && data.uid == userId
+        && data.uid == request.auth.uid
+        && isBoundedString(data.email, 3, 254)
+        && isBoundedString(data.displayName, 1, 120)
+        && isBoundedString(data.targetRole, 1, 100)
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidResumeAnalysis(data, userId, resumeId) {
+      return data.keys().hasAll([
+          'id', 'userId', 'fileName', 'fileType', 'extractedText', 'summary',
+          'education', 'experience', 'projects', 'strengths', 'improvements',
+          'suggestions', 'programmingSkills', 'technicalSkills', 'softSkills',
+          'isDemo', 'createdAt'
+        ])
+        && data.keys().hasOnly([
+          'id', 'userId', 'fileName', 'fileType', 'extractedText', 'summary',
+          'education', 'experience', 'projects', 'strengths', 'improvements',
+          'suggestions', 'programmingSkills', 'technicalSkills', 'softSkills',
+          'isDemo', 'createdAt'
+        ])
+        && data.id == resumeId
+        && data.userId == userId
+        && data.userId == request.auth.uid
+        && isBoundedString(data.fileName, 1, 200)
+        && data.fileType in ['pdf', 'docx', 'demo', 'text']
+        && isBoundedString(data.extractedText, 1, 35000)
+        && isBoundedString(data.summary, 1, 3000)
+        && isBoundedMapList(data.education, 15)
+        && isBoundedMapList(data.experience, 20)
+        && isBoundedMapList(data.projects, 20)
+        && isBoundedStringList(data.strengths, 15)
+        && isBoundedStringList(data.improvements, 15)
+        && isBoundedStringList(data.suggestions, 15)
+        && isBoundedStringList(data.programmingSkills, 40)
+        && isBoundedStringList(data.technicalSkills, 40)
+        && isBoundedStringList(data.softSkills, 30)
+        && data.isDemo is bool
+        && data.createdAt is timestamp;
+    }
+
+    function isValidJobMatch(data, userId, matchId) {
+      return data.keys().hasAll([
+          'id', 'userId', 'resumeId', 'jobTitle', 'companyName', 'jobDescription',
+          'compatibilityScore', 'matchedSkills', 'missingSkills', 'scoreExplanation',
+          'scoreBreakdown', 'isDemo', 'createdAt'
+        ])
+        && data.keys().hasOnly([
+          'id', 'userId', 'resumeId', 'jobTitle', 'companyName', 'jobDescription',
+          'compatibilityScore', 'matchedSkills', 'missingSkills', 'scoreExplanation',
+          'scoreBreakdown', 'isDemo', 'createdAt'
+        ])
+        && data.id == matchId
+        && data.userId == userId
+        && data.userId == request.auth.uid
+        && isValidId(data.resumeId)
+        && isBoundedString(data.jobTitle, 1, 160)
+        && isBoundedString(data.companyName, 1, 160)
+        && isBoundedString(data.jobDescription, 10, 20000)
+        && data.compatibilityScore is number
+        && data.compatibilityScore >= 0
+        && data.compatibilityScore <= 100
+        && isBoundedStringList(data.matchedSkills, 50)
+        && isBoundedStringList(data.missingSkills, 50)
+        && isBoundedString(data.scoreExplanation, 1, 3000)
+        && isBoundedMapList(data.scoreBreakdown, 10)
+        && data.isDemo is bool
+        && data.createdAt is timestamp;
+    }
+
+    function isValidSkillGapItem(data, userId, skillId) {
+      return data.keys().hasAll([
+          'id', 'userId', 'skillName', 'category', 'priority',
+          'learningTopics', 'completed', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'id', 'userId', 'skillName', 'category', 'priority',
+          'learningTopics', 'completed', 'createdAt', 'updatedAt'
+        ])
+        && data.id == skillId
+        && data.userId == userId
+        && data.userId == request.auth.uid
+        && isBoundedString(data.skillName, 1, 100)
+        && data.category in ['programming', 'technical', 'soft']
+        && data.priority in ['High', 'Medium', 'Foundation']
+        && isBoundedStringList(data.learningTopics, 12)
+        && data.completed is bool
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidCareerRoadmap(data, userId, roadmapId) {
+      return data.keys().hasAll([
+          'id', 'userId', 'targetRole', 'overview', 'steps',
+          'recommendedSkills', 'projectSuggestions', 'completedStepIds',
+          'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'id', 'userId', 'targetRole', 'overview', 'steps',
+          'recommendedSkills', 'projectSuggestions', 'completedStepIds',
+          'createdAt', 'updatedAt'
+        ])
+        && data.id == roadmapId
+        && data.userId == userId
+        && data.userId == request.auth.uid
+        && data.targetRole in [
+          'AI/ML Engineer',
+          'Data Analyst',
+          'Software Developer',
+          'Web Developer',
+          'Cybersecurity Analyst',
+          'Data Scientist'
+        ]
+        && isBoundedString(data.overview, 1, 2000)
+        && isBoundedMapList(data.steps, 20)
+        && isBoundedStringList(data.recommendedSkills, 30)
+        && isBoundedMapList(data.projectSuggestions, 10)
+        && isBoundedStringList(data.completedStepIds, 20)
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidInterviewSession(data, userId, interviewId) {
+      return data.keys().hasAll([
+          'id', 'userId', 'targetRole', 'category', 'question', 'sampleAnswer',
+          'userAnswer', 'aiFeedback', 'strengths', 'improvements', 'score',
+          'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'id', 'userId', 'targetRole', 'category', 'question', 'sampleAnswer',
+          'userAnswer', 'aiFeedback', 'strengths', 'improvements', 'score',
+          'createdAt', 'updatedAt'
+        ])
+        && data.id == interviewId
+        && data.userId == userId
+        && data.userId == request.auth.uid
+        && isBoundedString(data.targetRole, 1, 100)
+        && data.category in ['technical', 'hr']
+        && isBoundedString(data.question, 1, 1500)
+        && isBoundedString(data.sampleAnswer, 1, 4000)
+        && isBoundedString(data.userAnswer, 0, 6000)
+        && isBoundedString(data.aiFeedback, 0, 4000)
+        && isBoundedStringList(data.strengths, 10)
+        && isBoundedStringList(data.improvements, 10)
+        && data.score is number
+        && data.score >= 0
+        && data.score <= 100
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    match /users/{userId} {
+      allow get: if isValidId(userId) && isOwner(userId);
+      allow list: if false;
+      allow create: if isValidId(userId)
+        && isOwner(userId)
+        && isValidUserProfile(incoming(), userId)
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(userId)
+        && isOwner(userId)
+        && isValidUserProfile(incoming(), userId)
+        && incoming().uid == existing().uid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'targetRole', 'email', 'updatedAt']);
+      allow delete: if isValidId(userId) && isOwner(userId);
+
+      match /resumes/{resumeId} {
+        allow get: if isValidId(userId) && isValidId(resumeId) && isOwner(userId);
+        allow list: if isOwner(userId) && resource.data.userId == request.auth.uid;
+        allow create: if isValidId(userId)
+          && isValidId(resumeId)
+          && isOwner(userId)
+          && isValidResumeAnalysis(incoming(), userId, resumeId)
+          && parentUserExists(userId)
+          && incoming().createdAt == request.time;
+        allow update: if false;
+        allow delete: if isValidId(userId) && isValidId(resumeId) && isOwner(userId);
+      }
+
+      match /jobMatches/{matchId} {
+        allow get: if isValidId(userId) && isValidId(matchId) && isOwner(userId);
+        allow list: if isOwner(userId) && resource.data.userId == request.auth.uid;
+        allow create: if isValidId(userId)
+          && isValidId(matchId)
+          && isOwner(userId)
+          && isValidJobMatch(incoming(), userId, matchId)
+          && parentUserExists(userId)
+          && incoming().createdAt == request.time;
+        allow update: if false;
+        allow delete: if isValidId(userId) && isValidId(matchId) && isOwner(userId);
+      }
+
+      match /skillProgress/{skillId} {
+        allow get: if isValidId(userId) && isValidId(skillId) && isOwner(userId);
+        allow list: if isOwner(userId) && resource.data.userId == request.auth.uid;
+        allow create: if isValidId(userId)
+          && isValidId(skillId)
+          && isOwner(userId)
+          && isValidSkillGapItem(incoming(), userId, skillId)
+          && parentUserExists(userId)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time;
+        allow update: if isValidId(userId)
+          && isValidId(skillId)
+          && isOwner(userId)
+          && isValidSkillGapItem(incoming(), userId, skillId)
+          && incoming().userId == existing().userId
+          && incoming().id == existing().id
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly(['completed', 'updatedAt']);
+        allow delete: if isValidId(userId) && isValidId(skillId) && isOwner(userId);
+      }
+
+      match /roadmaps/{roadmapId} {
+        allow get: if isValidId(userId) && isValidId(roadmapId) && isOwner(userId);
+        allow list: if isOwner(userId) && resource.data.userId == request.auth.uid;
+        allow create: if isValidId(userId)
+          && isValidId(roadmapId)
+          && isOwner(userId)
+          && isValidCareerRoadmap(incoming(), userId, roadmapId)
+          && parentUserExists(userId)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time;
+        allow update: if isValidId(userId)
+          && isValidId(roadmapId)
+          && isOwner(userId)
+          && isValidCareerRoadmap(incoming(), userId, roadmapId)
+          && incoming().userId == existing().userId
+          && incoming().id == existing().id
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly(['completedStepIds', 'updatedAt']);
+        allow delete: if isValidId(userId) && isValidId(roadmapId) && isOwner(userId);
+      }
+
+      match /interviews/{interviewId} {
+        allow get: if isValidId(userId) && isValidId(interviewId) && isOwner(userId);
+        allow list: if isOwner(userId) && resource.data.userId == request.auth.uid;
+        allow create: if isValidId(userId)
+          && isValidId(interviewId)
+          && isOwner(userId)
+          && isValidInterviewSession(incoming(), userId, interviewId)
+          && parentUserExists(userId)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time;
+        allow update: if isValidId(userId)
+          && isValidId(interviewId)
+          && isOwner(userId)
+          && isValidInterviewSession(incoming(), userId, interviewId)
+          && incoming().userId == existing().userId
+          && incoming().id == existing().id
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly(['userAnswer', 'aiFeedback', 'strengths', 'improvements', 'score', 'updatedAt']);
+        allow delete: if isValidId(userId) && isValidId(interviewId) && isOwner(userId);
+      }
+    }
+  }
+}

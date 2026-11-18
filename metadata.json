@@ -1,0 +1,6 @@
+{
+  "name": "JobMatch AI",
+  "description": "Your Skills. Your Career. Your Future. Intelligent career assistant for resume analysis, skill detection, explainable job matching, career roadmaps, and AI interview preparation.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
